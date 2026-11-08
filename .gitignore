@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Large data is downloaded or regenerated, not committed
+# (data/sample/ IS committed on purpose)
+data/raw/*.csv
+data/processed/*.csv
+
+# MLflow local store
+artifacts/mlruns/
+
+# OS / editor noise
+.DS_Store
+.vscode/
+.idea/
