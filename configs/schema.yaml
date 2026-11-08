@@ -1,0 +1,7 @@
+# Expected schema of the transaction dataset (Kaggle "Credit Card Fraud Detection" layout).
+target: {name: Class, allowed: [0, 1]}
+columns:
+  - {name: Time,   kind: numeric, nullable: false, min: 0}
+  - {name: Amount, kind: numeric, nullable: false, min: 0}
+column_groups:                              # expands to V1..V28 (anonymised PCA components)
+  - {prefix: V, start: 1, end: 28, kind: numeric, nullable: false}

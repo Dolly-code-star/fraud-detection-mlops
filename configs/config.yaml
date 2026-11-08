@@ -1,0 +1,55 @@
+# Single source of truth for the baseline pipeline. All paths are relative to the repo root.
+project:
+  name: fraud-detection-mlops
+  version: v1-baseline
+  seed: 42
+
+paths:
+  raw_data: data/raw/creditcard.csv        # Kaggle file; optional (see README)
+  synthetic_data: data/raw/synthetic_creditcard.csv
+  processed_dir: data/processed
+  artifacts_dir: artifacts
+  models_dir: models
+  schema: configs/schema.yaml
+
+data:
+  # auto: use raw_data if present, otherwise generate the synthetic dataset
+  # kaggle_csv: require raw_data | synthetic: always generate
+  source: auto
+  synthetic: {n_rows: 100000, fraud_rate: 0.004, n_days: 14}
+  target: Class
+  time_col: Time
+  amount_col: Amount
+
+validation:
+  min_rows: 1000
+  fraud_rate_bounds: [0.0005, 0.05]        # outside -> error (likely a broken label column)
+
+split:                                     # chronological: train < val < test (no leakage from the future)
+  train_frac: 0.6
+  val_frac: 0.2
+
+features:
+  amount_log: true
+  cyclical_hour: true
+
+# Unsupervised detectors: labels are NEVER used for fitting, only for evaluation/threshold.
+models:
+  - {name: isolation_forest, type: isolation_forest, params: {n_estimators: 200, max_samples: 1024, n_jobs: -1}}
+  - {name: pca_reconstruction, type: pca_reconstruction, params: {n_components: 0.90}}
+  - {name: random_baseline, type: random, params: {}}   # sanity floor: PR-AUC ~= fraud prevalence
+
+evaluation:
+  selection_metric: average_precision      # PR-AUC, the right headline metric under extreme imbalance
+  alert_budget: 0.01                       # analysts can review the top 1% of transactions
+  threshold:
+    strategy: max_f1                       # max_f1 | alert_budget  (chosen on validation only)
+
+monitoring:
+  psi_bins: 10
+  psi_warn: 0.10
+  psi_alert: 0.25
+
+tracking:
+  backend: auto                            # auto | mlflow | local
+  experiment_name: fraud-detection-baseline
